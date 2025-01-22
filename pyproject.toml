@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "school reports"
+version = "0.1.0"
+description = ""
+authors = ["Hassan Mehmood <ihassan463m@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = {extras = ["standard"], version = "^0.115.6"}
+uvicorn = "^0.34.0"
+sqlalchemy = "^2.0.37"
+psycopg2-binary = "^2.9.10"
+python-jose = "^3.3.0"
+pydantic = "^2.10.5"
+passlib = "^1.7.4"
+bcrypt = "^4.2.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
