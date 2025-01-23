@@ -47,3 +47,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+def verify_user_role(required_role: str, current_user: models.User):
+    """
+    Verify if the current user has the required role (teacher or student).
+    """
+    if current_user.role != required_role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Only users with the role '{required_role}' are allowed to perform this action.",
+        )
+
+
+def verify_user_school(school_id: int, current_user: models.User):
+    """
+    Verify if the current user belongs to the specified school.
+    """
+    if current_user.school_id != school_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to access this school.",
+        )
