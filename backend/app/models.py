@@ -22,13 +22,19 @@ class School(Base):
     location = Column(String)
     school_info = Column(String)  # JSON-like string for details
     users = relationship("User", back_populates="school")
+    feedback = relationship("Feedback", back_populates="school")  # Feedback linked to the School
 
 class Feedback(Base):
     __tablename__ = 'feedback'
     feedback_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'))
     school_id = Column(Integer, ForeignKey('schools.id'))
+    section = Column(String)  # Can be "teacher" or "student"
     feedback_type = Column(String)  # Use string instead of Enum
     issue_description = Column(Text)
     status = Column(String, default="pending")  # Use string for status
     date_submitted = Column(DateTime, default=datetime.datetime.utcnow)
+    
+# Relationships
+    user = relationship("User")  # Relationship with User
+    school = relationship("School", back_populates="feedback")  # Relationship with School
