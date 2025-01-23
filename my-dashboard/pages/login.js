@@ -1,26 +1,36 @@
 import { useState } from 'react';
 import Layout from '../components/Layout';
+import { useRouter } from 'next/router';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const response = await fetch('http://localhost:8000/login', {
+    setError(''); // Reset error message
+
+    const response = await fetch('http://localhost:8000/admin/login', { // Adjusted endpoint for user login
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({ username, password }),
+      body: new URLSearchParams({
+        username,
+        password,
+      }),
     });
 
     if (response.ok) {
       const data = await response.json();
-      alert(`Logged in! Access Token: ${data.access_token}`);
-      // Store token and redirect as needed
+      localStorage.setItem('token', data.access_token); // Store token
+      alert('Logged in successfully!');
+      router.push('/'); // Redirect to dashboard
     } else {
-      alert('Invalid credentials');
+      const errorData = await response.json();
+      setError(errorData.detail || 'Invalid credentials');
     }
   };
 
@@ -51,6 +61,7 @@ const Login = () => {
         <button type="submit" className="bg-blue-500 text-white p-2">
           Login
         </button>
+        {error && <p className="text-red-500">{error}</p>}
       </form>
     </Layout>
   );

@@ -1,56 +1,52 @@
 import { useState } from 'react';
 
 const FeedbackForm = () => {
-  const [feedbackType, setFeedbackType] = useState('');
   const [issueDescription, setIssueDescription] = useState('');
+  const [userLocation, setUserLocation] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await fetch('http://localhost:8000/submit_feedback', {
+    const response = await fetch('http://localhost:8000/users/feedback', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
-      body: JSON.stringify({
-        user_id: 1, // Replace with actual user ID
-        school_id: 1, // Replace with actual school ID
-        feedback_type: feedbackType,
-        issue_description: issueDescription,
-      }),
+      body: JSON.stringify({ issue_description: issueDescription, user_location: userLocation }),
     });
 
     if (response.ok) {
       alert('Feedback submitted successfully!');
-      setFeedbackType('');
       setIssueDescription('');
+      setUserLocation('');
     } else {
-      alert('Failed to submit feedback.');
+      alert('Failed to submit feedback');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6 space-y-4">
-      <h2 className="text-xl font-semibold">Submit Feedback</h2>
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-gray-700">Feedback Type:</label>
+        <label className="block">Issue Description:</label>
         <input
           type="text"
-          value={feedbackType}
-          onChange={(e) => setFeedbackType(e.target.value)}
-          className="border border-gray-300 p-2 w-full rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={issueDescription}
+          onChange={(e) => setIssueDescription(e.target.value)}
+          className="border p-2 w-full"
           required
         />
       </div>
       <div>
-        <label className="block text-gray-700">Issue Description:</label>
-        <textarea
-          value={issueDescription}
-          onChange={(e) => setIssueDescription(e.target.value)}
-          className="border border-gray-300 p-2 w-full rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <label className="block">Your Location:</label>
+        <input
+          type="text"
+          value={userLocation}
+          onChange={(e) => setUserLocation(e.target.value)}
+          className="border p-2 w-full"
           required
         />
       </div>
-      <button type="submit" className="bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition duration-200">
+      <button type="submit" className="bg-blue-500 text-white p-2">
         Submit Feedback
       </button>
     </form>

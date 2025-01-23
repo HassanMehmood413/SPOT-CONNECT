@@ -2,26 +2,12 @@ import Link from 'next/link';
 
 const Navbar = () => {
   return (
-    <nav className="bg-blue-600 p-4 shadow-md">
-      <div className="container mx-auto flex justify-between items-center">
-        <h1 className="text-white text-2xl font-bold">School Feedback</h1>
-        <ul className="flex space-x-6">
-          <li>
-            <Link href="/" className="text-white hover:text-blue-200">Dashboard</Link>
-          </li>
-          <li>
-            <Link href="/feedback" className="text-white hover:text-blue-200">Feedback</Link>
-          </li>
-          <li>
-            <Link href="/schools" className="text-white hover:text-blue-200">Schools</Link>
-          </li>
-          <li>
-            <Link href="/login" className="text-white hover:text-blue-200">Login</Link>
-          </li>
-          <li>
-            <Link href="/register" className="text-white hover:text-blue-200">Register</Link>
-          </li>
-        </ul>
+    <nav className="bg-blue-600 text-white p-4">
+      <h1 className="text-xl font-bold">School Feedback Dashboard</h1>
+      <div className="mt-2">
+        <Link href="/" className="mr-4">Home</Link>
+        <Link href="/feedback" className="mr-4">Submit Feedback</Link>
+        <Link href="/login">Login</Link>
       </div>
     </nav>
   );
