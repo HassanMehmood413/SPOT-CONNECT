@@ -36,5 +36,7 @@ class Feedback(Base):
     date_submitted = Column(DateTime, default=datetime.datetime.utcnow)
     
 # Relationships
-    user = relationship("User")  # Relationship with User
-    school = relationship("School", back_populates="feedback")  # Relationship with School
+# Relationship with User
+    user = relationship("User")  
+# Relationship with School
+    school = relationship("School", back_populates="feedback")  
