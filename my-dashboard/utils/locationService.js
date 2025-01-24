@@ -1,4 +1,4 @@
-const API_KEY = ''; // Your actual API key for ipinfo.io
+const API_KEY = ''; 
 
 export async function getUserLocation() {
     try {
@@ -7,10 +7,9 @@ export async function getUserLocation() {
         const { ip } = await ipResponse.json();
         console.log('User IP:', ip); // Log the IP address
 
-        // Then get location data using the IP from ipinfo.io
         const locationResponse = await fetch(`https://ipinfo.io/${ip}/json?token=${API_KEY}`);
         const locationData = await locationResponse.json();
-        console.log('Location Data:', locationData); // Log the location data
+        console.log('Location Data:', locationData); 
 
         return {
             city: locationData.city || 'Unknown', // Use city from the response or default to 'Unknown'
