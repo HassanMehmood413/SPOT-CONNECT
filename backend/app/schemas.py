@@ -1,13 +1,14 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 
 class UserCreate(BaseModel):
     username: str
     password: str
-    location: str  # Location field
-    contact_number: Optional[str] = None  # Optional contact number
-    address: Optional[str] = None  # Optional address
+    location: str 
+    contact_number: Optional[str] = None  
+    address: Optional[str] = None  
 
     class Config:
         orm_mode = True
@@ -83,6 +84,27 @@ class TokenData(BaseModel):
 class DashboardData(BaseModel):
     feedbacks: list[FeedbackCreate]  # Assuming you have a Feedback schema defined
     nearby_schools: list[dict]  # Or use a specific school schema if you have one
+
+    class Config:
+        from_attributes = True
+
+class NetworkIssueBase(BaseModel):
+    title: str
+    description: str
+    location: str
+    source: Optional[str] = None
+    severity: str
+    isp_affected: Optional[str] = None
+
+class NetworkIssueCreate(NetworkIssueBase):
+    pass
+
+class NetworkIssue(NetworkIssueBase):
+    id: int
+    timestamp: datetime
+    is_resolved: bool
+    resolved_at: Optional[datetime] = None
+    reported_by: int
 
     class Config:
         from_attributes = True

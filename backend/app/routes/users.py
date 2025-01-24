@@ -47,6 +47,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     return db_user
 
+
+
 # User login
 @router.post("/login")
 def user_login(request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -106,30 +108,30 @@ def submit_feedback(feedback: schemas.FeedbackCreate, db: Session = Depends(get_
 
 
 
-
-
 @router.get("/dashboard", response_model=schemas.DashboardData)
 async def get_dashboard(db: Session = Depends(get_db), current_user: schemas.TokenData = Depends(oauth2.get_current_user)):
     try:
         print(f"Dashboard request for user ID: {current_user.id}")
         
-        # Fetch feedbacks
-        feedbacks = db.query(models.Feedback).filter(
-            models.Feedback.user_id == current_user.id
-        ).all()
+        # Fetch all feedbacks without filtering by user_id
+        feedbacks = db.query(models.Feedback).all()
         
-        # Format feedbacks
+        # Format feedbacks with all required fields
         feedback_list = []
         for feedback in feedbacks:
             feedback_dict = {
-                "feedback_id": feedback.user_id,  # Changed from id to user_id temporarily
+                "feedback_id": feedback.id,  # Changed from user_id to id
+                "user_id": feedback.user_id,  # Added missing required field
+                "feedback_type": feedback.feedback_type,  # Added missing required field
                 "issue_description": feedback.issue_description,
+                "issue_details": feedback.issue_details,  # Added missing required field
                 "user_location": feedback.user_location,
+                "repair_contacted": feedback.repair_contacted,  # Added missing required field
                 "status": "pending"  # Default status
             }
             feedback_list.append(feedback_dict)
 
-        # Get user for location
+        # Get user for location (still needed for user location)
         user = db.query(models.User).filter(models.User.id == current_user.id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -148,3 +150,29 @@ async def get_dashboard(db: Session = Depends(get_db), current_user: schemas.Tok
             status_code=500,
             detail=str(e)
         )
+
+
+
+@router.get("/profile", response_model=schemas.UserOut)
+def get_user_profile(current_user: schemas.TokenData = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+
+@router.put("/profile", response_model=schemas.UserOut)
+def update_user_profile(user_data: schemas.UserCreate, current_user: schemas.TokenData = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.username = user_data.username
+    user.location = user_data.location
+    user.contact_number = user_data.contact_number
+    user.address = user_data.address
+
+    db.commit()
+    db.refresh(user)
+    return user
