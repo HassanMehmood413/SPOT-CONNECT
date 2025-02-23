@@ -30,6 +30,7 @@ SpotConnect is a scalable AI-driven platform designed to revolutionize the way u
 
 
 
+---
 
 ## Getting Started
 
@@ -63,10 +64,23 @@ SpotConnect is a scalable AI-driven platform designed to revolutionize the way u
      ```bash
      poetry run uvicorn app.main:app --reload
      ```
-   - **Frontend:** Start the Next.js server:
-     ```bash
-     npm run dev
-     ```
+---
 
-5. Open the application in your browser at `http://localhost:3000`.
+
+# Four Images Block
+
+Below is a block of four images arranged in a grid:
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="https://example.com/image1.png" alt="Image 1" width="200"/></td>
+      <td align="center"><img src="https://example.com/image2.png" alt="Image 2" width="200"/></td>
+    </tr>
+    <tr>
+      <td align="center"><img src="https://example.com/image3.png" alt="Image 3" width="200"/></td>
+      <td align="center"><img src="https://example.com/image4.png" alt="Image 4" width="200"/></td>
+    </tr>
+  </table>
+</div>
 
