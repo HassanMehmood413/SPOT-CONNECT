@@ -1,25 +1,30 @@
-[tool.poetry]
-name = "school reports"
+[project]
+name = "spot-connect"
 version = "0.1.0"
 description = ""
-authors = ["Hassan Mehmood <ihassan463m@gmail.com>"]
+authors = [
+    {name = "Hassan Mehmood", email = "ihassan463m@gmail.com"}
+]
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.12"
-uvicorn = "^0.34.0"
-sqlalchemy = "^2.0.37"
-psycopg2-binary = "^2.9.10"
-python-jose = "^3.3.0"
-pydantic = "^2.10.5"
-passlib = {extras = ["bcrypt"], version = "^1.7.4"}
-bcrypt = "^4.2.1"
-pyjwt = "^2.10.1"
-fastapi = {extras = ["standard"], version = "^0.115.6"}
-requests = "^2.32.3"
-pydantic-settings = "^2.7.1"
-
+requires-python = ">=3.12"
+dependencies = [
+    "uvicorn>=0.34.0",
+    "sqlalchemy>=2.0.37",
+    "psycopg2-binary>=2.9.10",
+    "python-jose>=3.3.0",
+    "pydantic>=2.10.5",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.2.1",
+    "pyjwt>=2.10.1",
+    "fastapi[standard]>=0.115.6",
+    "requests>=2.32.3",
+    "pydantic-settings>=2.7.1",
+    "numpy>=1.23.5",
+    "networkx>=2.8.8",
+    "scipy>=1.9.3",
+    "scikit-learn>=0.0"
+]
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
