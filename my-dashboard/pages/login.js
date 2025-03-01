@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { API_CONFIG, getApiUrl } from '../config/api';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -15,7 +16,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/users/login', {
+      const response = await fetch(getApiUrl(API_CONFIG.endpoints.login), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -35,11 +36,18 @@ const Login = () => {
         setError(errorData.detail || 'Invalid credentials');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('An error occurred during login');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

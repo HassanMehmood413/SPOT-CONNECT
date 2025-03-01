@@ -15,7 +15,7 @@ const ProtectedPage = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/protected', { // Adjusted endpoint for protected data
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/protected`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

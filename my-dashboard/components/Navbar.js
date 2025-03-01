@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { FaUserCircle, FaCog, FaSignOutAlt, FaBars, FaTimes } from 'react-icons/fa';
+import { FaUserCircle, FaCog, FaSignOutAlt, FaBars, FaTimes, FaWifi, FaSignal, FaGlobe } from 'react-icons/fa';
 
 const Navbar = () => {
   const router = useRouter();
@@ -39,22 +39,38 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex-shrink-0">
-            <Link href="/" className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors duration-200">
-              FeedbackHub
-            </Link>
+          <div className="flex items-center">
+            <div className="flex items-center">
+              <div className="relative flex items-center">
+                <div className="bg-gradient-to-r from-blue-600 to-blue-400 p-2.5 rounded-xl shadow-lg transform -rotate-6">
+                  <FaGlobe className="text-white text-xl animate-pulse" />
+                </div>
+                <div className="bg-gradient-to-r from-indigo-600 to-indigo-400 p-2.5 rounded-xl shadow-lg absolute -right-3 rotate-6">
+                  <FaSignal className="text-white text-xl" />
+                </div>
+              </div>
+              <div className="ml-6 flex flex-col">
+                <span className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                  SPOT
+                </span>
+                <span className="text-lg font-bold tracking-wider text-gray-600">
+                  CONNECT
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="hidden md:flex md:items-center md:space-x-4">
+          <div className="hidden md:flex md:items-center md:space-x-6">
             <NavLink href="/" text="Dashboard" />
+            <NavLink href="/network-dashboard" text="Network Analysis" />
             <NavLink href="/feedback" text="Submit Feedback" />
             <NavLink href="/profile" text="Profile" />
-            <div className="relative">
-              <button onClick={toggleDropdown} className="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200">
-                <FaUserCircle className="w-6 h-6 mr-2" />
-                <span>User</span>
-                <svg className="w-4 h-4 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+            <div className="relative ml-2">
+              <button
+                onClick={toggleDropdown}
+                className="flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300"
+              >
+                <FaUserCircle className="w-5 h-5 mr-2" />
+                <span className="font-medium">User</span>
               </button>
               {isDropdownOpen && (
                 <motion.div
@@ -63,11 +79,17 @@ const Navbar = () => {
                   exit={{ opacity: 0, y: -10 }}
                   className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10"
                 >
-                  <Link href="/settings" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200">
+                  <Link
+                    href="/settings"
+                    className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                  >
                     <FaCog className="mr-2" />
                     Settings
                   </Link>
-                  <Link href="/logout" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200">
+                  <Link
+                    href="/logout"
+                    className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                  >
                     <FaSignOutAlt className="mr-2" />
                     Logout
                   </Link>
@@ -76,7 +98,10 @@ const Navbar = () => {
             </div>
           </div>
           <div className="md:hidden">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+            >
               <span className="sr-only">Open main menu</span>
               {isMenuOpen ? (
                 <FaTimes className="block h-6 w-6" />
@@ -96,6 +121,7 @@ const Navbar = () => {
         >
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <MobileNavLink href="/" text="Dashboard" />
+            <MobileNavLink href="/network-dashboard" text="Network Analysis" />
             <MobileNavLink href="/feedback" text="Submit Feedback" />
             <MobileNavLink href="/profile" text="Profile" />
             <MobileNavLink href="/settings" text="Settings" />
@@ -112,10 +138,16 @@ const NavLink = ({ href, text }) => {
   const isActive = router.pathname === href;
 
   return (
-    <Link href={href} className={`text-sm font-medium ${
-      isActive ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
-    } transition-colors duration-200`}>
+    <Link 
+      href={href} 
+      className={`relative px-3 py-2 font-medium text-sm group ${
+        isActive ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+      } transition-colors duration-200`}
+    >
       {text}
+      <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 transform origin-left scale-x-0 transition-transform duration-300 group-hover:scale-x-100 ${
+        isActive ? 'scale-x-100' : ''
+      }`} />
     </Link>
   );
 };

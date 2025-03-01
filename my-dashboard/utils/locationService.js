@@ -1,4 +1,4 @@
-const API_KEY = ''; 
+const API_KEY = process.env.NEXT_PUBLIC_LOCATION;
 
 export async function getUserLocation() {
     try {
