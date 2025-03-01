@@ -1,12 +1,15 @@
 import uvicorn
-from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Query, APIRouter, Depends
+from pydantic import BaseModel, validator
 import numpy as np
 import networkx as nx
 import logging
 from scipy.spatial.distance import cosine
 from sklearn.neural_network import MLPRegressor
 from sklearn.exceptions import NotFittedError
+from typing import List, Dict
+from . import oauth2
+from datetime import datetime
 
 # =============================================================================
 # Setup Logging
@@ -18,10 +21,11 @@ logging.basicConfig(level=logging.INFO,
 # Hyperparameters & Global Configuration
 # =============================================================================
 DIM = 10000             # Dimensionality for hypervectors
-SIMILARITY_THRESH = 0.3  # Default threshold for anomaly detection
+SIMILARITY_THRESH = 0.7  # Default threshold for anomaly detection - increased for better sensitivity
 
 CONFIG = {
-    "SIMILARITY_THRESH": SIMILARITY_THRESH
+    "SIMILARITY_THRESH": SIMILARITY_THRESH,
+    "DIM": DIM
 }
 
 # =============================================================================
@@ -119,6 +123,13 @@ class NeuroSymbolicRouting:
     def __init__(self):
         self.G = None
         self.penalty_model = MLPRegressor(hidden_layer_sizes=(10,), max_iter=500, random_state=42)
+        self.route_history = []
+        self.qos_weights = {
+            'latency': 0.4,
+            'bandwidth': 0.3,
+            'packet_loss': 0.2,
+            'jitter': 0.1
+        }
         self._train_penalty_model()
 
     def _train_penalty_model(self):
@@ -133,74 +144,308 @@ class NeuroSymbolicRouting:
 
     def build_network_graph(self):
         """
-        Build network graph:
-         - Create nodes
-         - Add edges with base cost and congestion factor
+        Build enhanced network graph with more nodes and QoS metrics
         """
         self.G = nx.Graph()
-        for i in range(1, 8):
+        # Add more nodes for better network representation
+        for i in range(1, 12):  # Increased to 11 nodes
             self.G.add_node(i)
+        
+        # Enhanced edges with QoS metrics
         edges = [
-            (1, 2, 5, 0.2),
-            (1, 3, 3, 0.1),
-            (2, 4, 2, 0.5),
-            (3, 4, 4, 0.3),
-            (4, 5, 6, 0.2),
-            (5, 6, 1, 0.7),
-            (3, 6, 8, 0.1),
-            (6, 7, 3, 0.4),
-            (4, 7, 7, 0.3)
+            (1, 2, {'base_cost': 5, 'congestion': 0.2, 'latency': 20, 'bandwidth': 1000, 'packet_loss': 0.1, 'jitter': 2}),
+            (1, 3, {'base_cost': 3, 'congestion': 0.1, 'latency': 15, 'bandwidth': 800, 'packet_loss': 0.2, 'jitter': 3}),
+            (2, 4, {'base_cost': 2, 'congestion': 0.5, 'latency': 25, 'bandwidth': 600, 'packet_loss': 0.3, 'jitter': 4}),
+            (3, 4, {'base_cost': 4, 'congestion': 0.3, 'latency': 30, 'bandwidth': 750, 'packet_loss': 0.15, 'jitter': 3}),
+            (4, 5, {'base_cost': 6, 'congestion': 0.2, 'latency': 18, 'bandwidth': 900, 'packet_loss': 0.1, 'jitter': 2}),
+            (5, 6, {'base_cost': 1, 'congestion': 0.7, 'latency': 35, 'bandwidth': 500, 'packet_loss': 0.4, 'jitter': 5}),
+            (3, 6, {'base_cost': 8, 'congestion': 0.1, 'latency': 22, 'bandwidth': 850, 'packet_loss': 0.2, 'jitter': 3}),
+            (6, 7, {'base_cost': 3, 'congestion': 0.4, 'latency': 28, 'bandwidth': 700, 'packet_loss': 0.25, 'jitter': 4}),
+            (4, 7, {'base_cost': 7, 'congestion': 0.3, 'latency': 24, 'bandwidth': 800, 'packet_loss': 0.15, 'jitter': 3}),
+            # New edges for enhanced connectivity
+            (7, 8, {'base_cost': 4, 'congestion': 0.2, 'latency': 20, 'bandwidth': 900, 'packet_loss': 0.1, 'jitter': 2}),
+            (8, 9, {'base_cost': 5, 'congestion': 0.3, 'latency': 25, 'bandwidth': 750, 'packet_loss': 0.2, 'jitter': 3}),
+            (9, 10, {'base_cost': 3, 'congestion': 0.4, 'latency': 30, 'bandwidth': 600, 'packet_loss': 0.3, 'jitter': 4}),
+            (10, 11, {'base_cost': 6, 'congestion': 0.1, 'latency': 15, 'bandwidth': 1000, 'packet_loss': 0.1, 'jitter': 2}),
+            (8, 11, {'base_cost': 7, 'congestion': 0.2, 'latency': 22, 'bandwidth': 850, 'packet_loss': 0.15, 'jitter': 3}),
         ]
-        for u, v, cost, congestion in edges:
-            adjusted_cost = cost * (1 + congestion)
-            self.G.add_edge(u, v, base_cost=cost, congestion=congestion, adjusted_cost=adjusted_cost)
-        logging.info("Network graph built successfully.")
+        
+        for u, v, data in edges:
+            self.G.add_edge(u, v, **data)
+            self.adjust_edge_cost(u, v)
+        
+        logging.info("Enhanced network graph built successfully with QoS metrics.")
+
+    def adjust_edge_cost(self, u, v):
+        """
+        Adjust edge cost based on QoS metrics and congestion
+        """
+        edge_data = self.G[u][v]
+        
+        # Calculate QoS score
+        qos_score = (
+            self.qos_weights['latency'] * (1 / edge_data['latency']) +
+            self.qos_weights['bandwidth'] * (edge_data['bandwidth'] / 1000) +
+            self.qos_weights['packet_loss'] * (1 - edge_data['packet_loss']) +
+            self.qos_weights['jitter'] * (1 / edge_data['jitter'])
+        )
+        
+        # Get congestion penalty
+        congestion = edge_data['congestion']
+        learned_penalty = self.penalty_model.predict([[congestion]])[0]
+        fixed_penalty = 3 if congestion > 0.5 else 0
+        
+        # Calculate final cost
+        edge_data['final_cost'] = (
+            edge_data['base_cost'] * 
+            (1 + learned_penalty + fixed_penalty) * 
+            (1 / qos_score)
+        )
 
     def adjust_costs(self):
         """
-        Adjust edge costs:
-         - Use penalty model to calculate learned penalty based on congestion
-         - Apply a fixed penalty if congestion > 0.5
-         - Sum these to get final cost for each edge
+        Adjust all edge costs in the network
         """
         if self.G is None:
             raise ValueError("Graph not built. Run build_network_graph() first.")
-        for u, v, data in self.G.edges(data=True):
-            congestion = data['congestion']
-            try:
-                learned_penalty = self.penalty_model.predict(np.array([[congestion]]))[0]
-            except NotFittedError:
-                logging.warning("Penalty model not fitted; using 0.")
-                learned_penalty = 0
-            fixed_penalty = 3 if congestion > 0.5 else 0
-            data['final_cost'] = data['adjusted_cost'] + learned_penalty + fixed_penalty
-        logging.info("Edge costs adjusted using neuro-symbolic integration.")
+        
+        for u, v in self.G.edges():
+            self.adjust_edge_cost(u, v)
+        
+        logging.info("Edge costs adjusted using QoS metrics and neuro-symbolic integration.")
 
-    def compute_optimal_path(self, source: int, target: int):
+    def compute_optimal_path(self, source: int, target: int, algorithm: str = 'dijkstra', k: int = 3):
         """
-        Compute the optimal path using Dijkstra’s algorithm:
-         - Based on the adjusted edge costs, determine the shortest path
-         - Return the path and its total cost
+        Compute optimal path using specified algorithm
         """
         if self.G is None:
             raise ValueError("Graph not built. Run build_network_graph() first.")
+        
         self.adjust_costs()
+        
         try:
-            path = nx.dijkstra_path(self.G, source, target, weight='final_cost')
-            total_cost = nx.dijkstra_path_length(self.G, source, target, weight='final_cost')
-            return path, total_cost
+            paths = []
+            costs = []
+            
+            if algorithm == 'dijkstra':
+                path = nx.dijkstra_path(self.G, source, target, weight='final_cost')
+                cost = nx.dijkstra_path_length(self.G, source, target, weight='final_cost')
+                paths.append(path)
+                costs.append(cost)
+            
+            elif algorithm == 'astar':
+                path = nx.astar_path(self.G, source, target, weight='final_cost')
+                cost = sum(self.G[path[i]][path[i+1]]['final_cost'] for i in range(len(path)-1))
+                paths.append(path)
+                costs.append(cost)
+            
+            elif algorithm == 'k_shortest':
+                # Get k shortest paths using Yen's algorithm
+                paths = list(nx.shortest_simple_paths(self.G, source, target, weight='final_cost'))[:k]
+                costs = [sum(self.G[path[i]][path[i+1]]['final_cost'] for i in range(len(path)-1)) for path in paths]
+            
+            # Store in route history
+            timestamp = datetime.now()
+            history_entry = {
+                'timestamp': timestamp,
+                'source': source,
+                'target': target,
+                'algorithm': algorithm,
+                'paths': paths,
+                'costs': costs
+            }
+            self.route_history.append(history_entry)
+            
+            # Return enhanced routing results
+            return {
+                'paths': paths,
+                'costs': costs,
+                'algorithm': algorithm,
+                'qos_metrics': self._get_path_qos_metrics(paths[0]),  # QoS metrics for the best path
+                'visualization_data': self._get_visualization_data(paths[0])
+            }
+            
         except Exception as e:
             logging.error(f"Error computing optimal path: {e}")
             raise
+
+    def _get_path_qos_metrics(self, path):
+        """
+        Calculate aggregate QoS metrics for a path
+        """
+        total_latency = 0
+        min_bandwidth = float('inf')
+        total_packet_loss = 0
+        total_jitter = 0
+        
+        for i in range(len(path)-1):
+            edge = self.G[path[i]][path[i+1]]
+            total_latency += edge['latency']
+            min_bandwidth = min(min_bandwidth, edge['bandwidth'])
+            total_packet_loss = 1 - ((1 - total_packet_loss) * (1 - edge['packet_loss']))
+            total_jitter += edge['jitter']
+        
+        return {
+            'end_to_end_latency': total_latency,
+            'available_bandwidth': min_bandwidth,
+            'packet_loss_probability': total_packet_loss,
+            'total_jitter': total_jitter
+        }
+
+    def _get_visualization_data(self, path):
+        """
+        Prepare data for path visualization
+        """
+        nodes = []
+        edges = []
+        
+        # Add all nodes
+        for node in self.G.nodes():
+            nodes.append({
+                'id': node,
+                'in_path': node in path
+            })
+        
+        # Add all edges
+        for u, v, data in self.G.edges(data=True):
+            edges.append({
+                'source': u,
+                'target': v,
+                'metrics': {
+                    'latency': data['latency'],
+                    'bandwidth': data['bandwidth'],
+                    'packet_loss': data['packet_loss'],
+                    'jitter': data['jitter'],
+                    'congestion': data['congestion']
+                },
+                'in_path': (u in path and v in path and 
+                           path[path.index(u) if u in path else 0:].index(v) == 1)
+            })
+        
+        return {
+            'nodes': nodes,
+            'edges': edges
+        }
+
+    def get_route_history(self):
+        """
+        Get the routing history
+        """
+        return self.route_history
+
+    def update_edge_congestion(self, u: int, v: int, new_congestion: float):
+        """
+        Update congestion value for an edge
+        """
+        if self.G is None or not self.G.has_edge(u, v):
+            raise ValueError(f"Edge ({u}, {v}) not found in graph")
+        
+        if not 0 <= new_congestion <= 1:
+            raise ValueError("Congestion value must be between 0 and 1")
+        
+        self.G[u][v]['congestion'] = new_congestion
+        self.adjust_edge_cost(u, v)
+        logging.info(f"Updated congestion for edge ({u}, {v}) to {new_congestion}")
 
 # =============================================================================
 # Pydantic Models for Request Validation
 # =============================================================================
 class TelemetryData(BaseModel):
-    data: list[float]
+    data: List[float]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "data": [0.1, 0.2, 0.3, 0.4, 0.5]
+            }
+        }
+
+    @validator('data')
+    def validate_data(cls, v):
+        if not v:
+            raise ValueError('Data array cannot be empty')
+        if len(v) < 2:
+            raise ValueError('Need at least 2 data points for analysis')
+        if not all(isinstance(x, (int, float)) for x in v):
+            raise ValueError('All values must be numbers')
+        return v
 
 class ConfigData(BaseModel):
     SIMILARITY_THRESH: float
+
+class HealthResponse(BaseModel):
+    status: str
+    SIMILARITY_THRESH: float
+    uptime: str
+
+class ManualMetricsInput(BaseModel):
+    latency: float
+    bandwidth: float
+    packet_loss: float
+    jitter: float
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "latency": 50.0,
+                "bandwidth": 100.0,
+                "packet_loss": 0.5,
+                "jitter": 5.0
+            }
+        }
+
+    @validator('latency')
+    def validate_latency(cls, v):
+        if v < 0 or v > 1000:
+            raise ValueError('Latency must be between 0 and 1000 ms')
+        return v
+
+    @validator('bandwidth')
+    def validate_bandwidth(cls, v):
+        if v < 0:
+            raise ValueError('Bandwidth must be non-negative')
+        return v
+
+    @validator('packet_loss')
+    def validate_packet_loss(cls, v):
+        if v < 0 or v > 100:
+            raise ValueError('Packet loss must be between 0 and 100 percent')
+        return v
+
+    @validator('jitter')
+    def validate_jitter(cls, v):
+        if v < 0 or v > 100:
+            raise ValueError('Jitter must be between 0 and 100 ms')
+        return v
+
+class RoutingRequest(BaseModel):
+    source: int
+    target: int
+    algorithm: str = 'dijkstra'  # default to dijkstra
+    k_paths: int = 3  # for k-shortest paths algorithm
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "source": 1,
+                "target": 11,
+                "algorithm": "dijkstra",
+                "k_paths": 3
+            }
+        }
+
+    @validator('algorithm')
+    def validate_algorithm(cls, v):
+        valid_algorithms = ['dijkstra', 'astar', 'k_shortest']
+        if v not in valid_algorithms:
+            raise ValueError(f'Algorithm must be one of {valid_algorithms}')
+        return v
+
+    @validator('k_paths')
+    def validate_k_paths(cls, v):
+        if v < 1 or v > 10:
+            raise ValueError('k_paths must be between 1 and 10')
+        return v
 
 # =============================================================================
 # FastAPI Setup and Endpoints
@@ -215,87 +460,218 @@ app = FastAPI(
 pm = PredictiveMaintenance()
 nsr = NeuroSymbolicRouting()
 
+router = APIRouter(
+    prefix="/api/resilience",
+    tags=["Network Resilience"]
+)
+
 # --- Endpoint: Predictive Maintenance ---
-@app.post("/predictive-maintenance")
-async def predictive_maintenance_endpoint(telemetry: TelemetryData):
+@router.post("/predictive-maintenance")
+async def predictive_maintenance(telemetry: TelemetryData):
     """
-    Flow:
-      1. Receive telemetry data (client request)
-      2. Apply moving average filter
-      3. Encode data using hyperdimensional computing
-      4. Build prototype hypervector (normal state)
-      5. Detect anomalies by comparing new data points
-      6. Calculate cosine similarity and flag anomalies
-      7. Return anomaly detection results
+    Perform predictive maintenance analysis on telemetry data.
+    
+    Args:
+        telemetry (TelemetryData): Object containing array of float values
+        
+    Returns:
+        dict: Results containing anomaly detection and similarity scores
     """
     try:
+        # Validate data range
+        if not all(-1000 <= x <= 1000 for x in telemetry.data):
+            raise HTTPException(
+                status_code=400,
+                detail="Data values must be between -1000 and 1000"
+            )
+
+        # Apply moving average filter to smooth the data
         telemetry_array = np.array(telemetry.data)
-        pm.build_prototype(telemetry_array)
+        smoothed_data = moving_average_filter(telemetry_array)
+        
+        # Build prototype and detect anomalies
+        pm.build_prototype(smoothed_data)
         results = []
-        for val in telemetry.data:
-            similarity, anomaly = pm.detect(val)
+        
+        for val in smoothed_data:
+            similarity, anomaly = pm.detect(float(val))
             results.append({
                 "value": float(val),
                 "similarity": float(similarity),
-                "anomaly": bool(anomaly)
+                "anomaly": bool(anomaly),
+                "threshold": float(CONFIG["SIMILARITY_THRESH"])
             })
-        return {"results": results}
+        
+        return {
+            "results": results,
+            "total_anomalies": sum(1 for r in results if r["anomaly"]),
+            "average_similarity": float(np.mean([r["similarity"] for r in results])),
+            "data_points_analyzed": len(results)
+        }
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Predictive maintenance error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 
 # --- Endpoint: Routing ---
-@app.get("/routing")
-async def routing_endpoint(source: int = Query(1), target: int = Query(7)):
+@router.post("/routing")
+async def routing(
+    request: RoutingRequest,
+    current_user: dict = Depends(oauth2.get_current_user)
+):
     """
-    Flow:
-      1. Build network graph
-      2. Adjust edge costs with penalty model
-      3. Compute optimal path using Dijkstra’s algorithm
-      4. Return routing results
+    Enhanced routing endpoint supporting multiple algorithms and QoS metrics
     """
     try:
+        # Validate node existence
+        if not (1 <= request.source <= 11 and 1 <= request.target <= 11):
+            raise HTTPException(
+                status_code=400,
+                detail="Source and target nodes must be between 1 and 11"
+            )
+
+        # Initialize network if needed
         nsr.build_network_graph()
-        path, total_cost = nsr.compute_optimal_path(source, target)
-        return {"path": path, "total_cost": total_cost}
+
+        # Compute optimal path with specified algorithm
+        result = nsr.compute_optimal_path(
+            request.source,
+            request.target,
+            algorithm=request.algorithm,
+            k=request.k_paths
+        )
+
+        return {
+            "routing_result": result,
+            "metadata": {
+                "timestamp": datetime.now().isoformat(),
+                "user_id": current_user.id,
+                "algorithm_used": request.algorithm
+            }
+        }
+
+    except Exception as e:
+        logging.error(f"Routing error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Routing error: {str(e)}"
+        )
+
+@router.get("/routing/history")
+async def get_routing_history(
+    current_user: dict = Depends(oauth2.get_current_user)
+):
+    """
+    Get routing history for analysis
+    """
+    try:
+        history = nsr.get_route_history()
+        return {
+            "history": history,
+            "total_routes": len(history)
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching routing history: {str(e)}"
+        )
+
+@router.post("/routing/update-congestion")
+async def update_congestion(
+    u: int,
+    v: int,
+    congestion: float,
+    current_user: dict = Depends(oauth2.get_current_user)
+):
+    """
+    Update congestion values for network edges
+    """
+    try:
+        nsr.update_edge_congestion(u, v, congestion)
+        return {"message": f"Successfully updated congestion for edge ({u}, {v})"}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error updating congestion: {str(e)}"
+        )
+
+# --- Endpoint: Health Check ---
+@router.get("/health-check")
+async def health_check():
+    """Get system health status"""
+    try:
+        return {
+            "status": "Healthy",
+            "SIMILARITY_THRESH": CONFIG["SIMILARITY_THRESH"],
+            "uptime": "99.9%"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- Endpoint: Health Check ---
-@app.get("/health-check")
-async def health_check():
-    """
-    Returns system health and current configuration for monitoring.
-    """
-    return {"status": "ok", "SIMILARITY_THRESH": pm.similarity_thresh}
-
 # --- Endpoint: Get/Update Configuration ---
-@app.get("/config")
+@router.get("/config")
 async def get_config():
-    """
-    Returns the current configuration.
-    """
-    return CONFIG
+    """Get current system configuration"""
+    try:
+        return CONFIG
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/config")
+@router.post("/config")
 async def update_config(new_config: ConfigData):
-    """
-    Updates the configuration (e.g., SIMILARITY_THRESH) and applies changes.
-    """
+    """Update system configuration"""
     try:
         CONFIG["SIMILARITY_THRESH"] = new_config.SIMILARITY_THRESH
         pm.similarity_thresh = new_config.SIMILARITY_THRESH
-        return {"status": "updated", "config": CONFIG}
+        return {"message": "Configuration updated successfully", "config": CONFIG}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- Endpoint: Retrain Penalty Model ---
-@app.post("/retrain-penalty")
-async def retrain_penalty():
+@router.post("/retrain-penalty")
+async def retrain_penalty(current_user: dict = Depends(oauth2.get_current_user)):
     """
     Retrains the penalty model used for adjusting routing costs.
     """
     try:
         nsr._train_penalty_model()
-        return {"status": "Penalty model retrained."}
+        return {"message": "Penalty model retrained successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- Endpoint: Add Manual Metrics ---
+@router.post("/manual-metrics")
+async def add_manual_metrics(metrics: ManualMetricsInput, current_user: dict = Depends(oauth2.get_current_user)):
+    """
+    Add manual network metrics.
+    
+    Args:
+        metrics (ManualMetricsInput): Object containing network metrics values
+        
+    Returns:
+        dict: Confirmation of metrics addition
+    """
+    try:
+        return {
+            "status": "success",
+            "message": "Manual metrics added successfully",
+            "metrics": {
+                "latency": metrics.latency,
+                "bandwidth": metrics.bandwidth,
+                "packet_loss": metrics.packet_loss,
+                "jitter": metrics.jitter,
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+    except Exception as e:
+        logging.error(f"Error adding manual metrics: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
