@@ -38,7 +38,7 @@ SpotConnect is a scalable AI-driven platform designed to revolutionize the way u
 
 - **Node.js** (for frontend development)
 - **Python 3.8+** (for backend)
-- **poetry** (to install Python dependencies)
+- **poetry** (to install the  Python dependencies)
 
 ### Installation
 
