@@ -5,7 +5,7 @@
 
 ---
 
-![First](Images/cover.png)
+![First](Images/slide.png)
 
 ---
 
@@ -18,7 +18,7 @@
 
 ---
 
-![Second](Images/fronte.png)
+![Second](Images/cover2.png)
 
 ---
 
