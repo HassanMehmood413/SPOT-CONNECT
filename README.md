@@ -9,11 +9,8 @@
 
 ---
 
-## Problem Statement:
-Frequent shutdowns and slow speeds have led to significant economic losses, with businesses suffering and losses exceeding $1.62 billion in 2024. Poor internet connectivity poses major challenges, such as delays in retrieving medical records, obstacles in telemedicine consultations, and disrupted communication among healthcare providers.Today people are still facing these kinds of issues.
-
-### Solution:
-SpotConnect is a scalable AI-driven platform designed to revolutionize the way users report and address network issues. It empowers individuals to provide real-time feedback about their current connectivity challenges, such as slow internet speeds, network outages, and hardware malfunctions. By geolocation services, SpotConnect efficiently collects and analyzes feedback data to notify nearby organizations including internet service providers(ISPs), local authorities, and community-based technical teams allowing them to take timely action and improve overall network reliability.It also provide real time updates of network issues in the users area
+## Problem Statement + Solution:
+𝗦𝗣𝗢𝗧 𝗖𝗼𝗻𝗻𝗲𝗰𝘁 is an AI-powered network resilience platform that revolutionizes 𝗽𝘂𝗯𝗹𝗶𝗰 𝘀𝗲𝗰𝘁𝗼𝗿 infrastructure by harnessing cutting-edge AI solutions to drive predictive maintenance, real-time monitoring, and intelligent routing. Our platform addresses critical 𝗰𝗵𝗮𝗹𝗹𝗲𝗻𝗴𝗲𝘀 such as reactive maintenance, inefficient resource allocation, high operational costs, and suboptimal routing, ensuring networks remain robust, reliable, and efficient. Utilizing hyperdimensional computing and advanced time-series analysis, SPOT Connect anticipates faults before they occur, optimizes maintenance schedules, and manages energy and costs through dynamic routing algorithms and QoS-aware optimization. The secure architecture, built on a FastAPI framework and Python ML stack, guarantees real-time data processing and robust security. Future enhancements include advanced ML model integration, IoT sensor expansion, GIS data incorporation, and cloud-native deployment, positioning SPOT Connect as the cornerstone of digital transformation in the public sector.
 
 
 ## Here is the preview:
