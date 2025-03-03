@@ -1,6 +1,6 @@
 # SPOT CONNECT
 
-### [[Submission Link](https://lablab.ai/event/ai-for-connectivity-hackathon/mrdemocrats/spot-connect)]
+### [[Submission Link](https://lablab.ai/event/ai-for-connectivity-hackathon-building-resilient-networks/default/spot-connect)]
 
 
 ---
