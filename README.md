@@ -22,10 +22,13 @@
 
 ---
 
-![Third](Images/nearby.png)
+### Network Telemetry Data Graph:
+![Third](Images/graph.png)
 
+---
 
-
+### AI Insights:
+![Third](Images/ai.png)
 
 ---
 
